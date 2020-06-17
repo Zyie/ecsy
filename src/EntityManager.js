@@ -1,4 +1,3 @@
-import Entity from "./Entity.js";
 import ObjectPool from "./ObjectPool.js";
 import QueryManager from "./QueryManager.js";
 import EventDispatcher from "./EventDispatcher.js";
@@ -21,7 +20,10 @@ export class EntityManager {
 
     this._queryManager = new QueryManager(this);
     this.eventDispatcher = new EventDispatcher();
-    this._entityPool = new ObjectPool(Entity);
+    this._entityPool = new ObjectPool(
+      this.world.options.entityClass,
+      this.world.options.entityPoolSize
+    );
 
     // Deferred deletion
     this.entitiesWithComponentsToRemove = [];
@@ -37,7 +39,7 @@ export class EntityManager {
    * Create a new entity
    */
   createEntity(name) {
-    var entity = this._entityPool.aquire();
+    var entity = this._entityPool.acquire();
     entity.alive = true;
     entity.name = name || "";
     if (name) {
@@ -63,7 +65,15 @@ export class EntityManager {
    * @param {Object} values Optional values to replace the default attributes
    */
   entityAddComponent(entity, Component, values) {
-    if (~entity._ComponentTypes.indexOf(Component)) return;
+    if (~entity._ComponentTypes.indexOf(Component)) {
+      // @todo Just on debug mode
+      console.warn(
+        "Component type already exists on entity.",
+        entity,
+        Component.name
+      );
+      return;
+    }
 
     entity._ComponentTypes.push(Component);
 
@@ -74,7 +84,7 @@ export class EntityManager {
     var componentPool = this.world.componentsManager.getComponentsPool(
       Component
     );
-    var component = componentPool.aquire();
+    var component = componentPool.acquire();
 
     entity._components[Component.name] = component;
 
@@ -186,6 +196,10 @@ export class EntityManager {
 
   _releaseEntity(entity, index) {
     this._entities.splice(index, 1);
+
+    if (this._entitiesByNames[entity.name]) {
+      delete this._entitiesByNames[entity.name];
+    }
 
     // Prevent any access and free
     entity._world = null;

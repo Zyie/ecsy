@@ -2,9 +2,18 @@ import { SystemManager } from "./SystemManager.js";
 import { EntityManager } from "./EntityManager.js";
 import { ComponentManager } from "./ComponentManager.js";
 import { Version } from "./Version.js";
+import { hasWindow, now } from "./Utils.js";
+import { Entity } from "./Entity.js";
+
+const DEFAULT_OPTIONS = {
+  entityPoolSize: 0,
+  entityClass: Entity
+};
 
 export class World {
-  constructor() {
+  constructor(options = {}) {
+    this.options = Object.assign({}, DEFAULT_OPTIONS, options);
+
     this.componentsManager = new ComponentManager(this);
     this.entityManager = new EntityManager(this);
     this.systemManager = new SystemManager(this);
@@ -13,14 +22,14 @@ export class World {
 
     this.eventQueues = {};
 
-    if (typeof CustomEvent !== "undefined") {
+    if (hasWindow && typeof CustomEvent !== "undefined") {
       var event = new CustomEvent("ecsy-world-created", {
         detail: { world: this, version: Version }
       });
       window.dispatchEvent(event);
     }
 
-    this.lastTime = performance.now();
+    this.lastTime = now();
   }
 
   registerComponent(Component) {
@@ -30,6 +39,11 @@ export class World {
 
   registerSystem(System, attributes) {
     this.systemManager.registerSystem(System, attributes);
+    return this;
+  }
+
+  unregisterSystem(System) {
+    this.systemManager.unregisterSystem(System);
     return this;
   }
 
@@ -43,7 +57,7 @@ export class World {
 
   execute(delta, time) {
     if (!delta) {
-      let time = performance.now();
+      time = now();
       delta = time - this.lastTime;
       this.lastTime = time;
     }

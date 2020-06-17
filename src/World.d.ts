@@ -2,6 +2,11 @@ import { Component, ComponentConstructor } from "./Component";
 import { System, SystemConstructor } from "./System";
 import { Entity } from "./Entity";
 
+interface Options {
+  entityPoolSize?: number;
+  [propName: string]: any;
+}
+
 /**
  * The World is the root of the ECS.
  */
@@ -14,7 +19,7 @@ export class World {
   /**
    * Create a new World.
    */
-  constructor();
+  constructor(options?: Options);
 
   /**
    * Register a component.
@@ -27,6 +32,13 @@ export class World {
    * @param System Type of system to register
    */
   registerSystem<T extends System>(System:SystemConstructor<T>, attributes?: object): this;
+  
+
+  /**
+   * Unregister a system.
+   * @param System Type of system to unregister
+   */
+  unregisterSystem<T extends System>(System:SystemConstructor<T>): this;
 
   /**
    * Get a system registered in this world.
@@ -59,5 +71,5 @@ export class World {
   /**
    * Create a new entity
    */
-  createEntity(name: string?):Entity
+  createEntity(name?: string):Entity
 }
